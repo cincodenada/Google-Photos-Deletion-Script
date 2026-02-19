@@ -12,6 +12,7 @@
       checkbox: ".ckGgle[aria-checked=false]",
       photoContainer: "div[jsname='fPosBb']",
       deleteButton: 'button[aria-label="Move to trash"]',
+      confirmationToast: 'aside div[role="status"]',
       confirmationButtonText: "Move to trash",
     },
   };
@@ -137,23 +138,17 @@
 
         await sleep(500); // Wait a moment for the selection UI to update.
         await executeDeletion();
-
-        // --- STALL DETECTION LOGIC ---
-        let uncheckedPhotoCount = 0;
+        let confirmedDeleted = 0;
         try {
-          // Check for photos again to verify deletion was successful.
-          const checkBoxesAfter = await waitUntil(
-            () => document.querySelectorAll(CONFIG.selectors.checkbox),
-            "any selectable photo",
+          const confirmation = await waitUntil(
+            () => document.querySelector(CONFIG.selectors.confirmationToast),
+            "confirmation toast",
             5000
-          );
-          uncheckedPhotoCount = checkBoxesAfter.length;
-        } catch (e) {
-          // If no photos are found, it means the batch was successfully deleted.
-          uncheckedPhotoCount = 0;
-        }
-
-        if (uncheckedPhotoCount === 0) {
+          )
+          confirmedDeleted = parseInt(confirmation.innerText);
+          closeButton = confirmedDeleted.querySelector('button[aria-label="Close"]')
+          closeButton.click()
+        } catch (error) {
           stallCounter++;
           console.warn(
             `[WARNING] Deletion appears to have failed. Photo count did not decrease. Stall attempt ${stallCounter}/${CONFIG.stallLimit}.`
@@ -164,15 +159,15 @@
               `Stall Detected. Google is likely rate-limiting you. The script will now stop.`
             );
           }
-        } else {
-          // If deletion was successful, reset the counter and update the total.
-          stallCounter = 0;
-          
-          totalDeleted += countToDelete;
-          console.log(
-            `Successfully deleted a batch of ${countToDelete}. Total deleted so far: ${totalDeleted} in ${getTimeSince(start)}`
-          );
         }
+        
+        // If deletion was successful, reset the counter and update the total.
+        stallCounter = 0;
+        
+        totalDeleted += confirmedDeleted;
+        console.log(
+          `Successfully deleted a batch of ${confirmedDeleted}. Total deleted so far: ${totalDeleted} in ${getTimeSince(start)}`
+        );
       } catch (error) {
         // If waitUntil times out finding selectable photos, it means the page is empty.
         if (error.message.includes("any selectable photo")) {
@@ -222,3 +217,4 @@
     );
   }
 })();
+
