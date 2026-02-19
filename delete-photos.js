@@ -120,10 +120,10 @@
           () => document.querySelectorAll(CONFIG.selectors.checkbox),
           "any selectable photo"
         );
-        const photoCountBefore = checkBoxes.length; // Count photos before deletion.
+        const countToDelete = checkBoxes.length; // Count photos before deletion.
 
         console.log(
-          `Found ${photoCountBefore} visible photos. Selecting all...`
+          `Found ${countToDelete} visible photos. Selecting all...`
         );
         for (const box of checkBoxes) {
           try {
@@ -139,7 +139,7 @@
         await executeDeletion();
 
         // --- STALL DETECTION LOGIC ---
-        let photoCountAfter = 0;
+        let uncheckedPhotoCount = 0;
         try {
           // Check for photos again to verify deletion was successful.
           const checkBoxesAfter = await waitUntil(
@@ -147,13 +147,13 @@
             "any selectable photo",
             5000
           );
-          photoCountAfter = checkBoxesAfter.length;
+          uncheckedPhotoCount = checkBoxesAfter.length;
         } catch (e) {
           // If no photos are found, it means the batch was successfully deleted.
-          photoCountAfter = 0;
+          uncheckedPhotoCount = 0;
         }
 
-        if (photoCountAfter >= photoCountBefore) {
+        if (uncheckedPhotoCount === 0) {
           stallCounter++;
           console.warn(
             `[WARNING] Deletion appears to have failed. Photo count did not decrease. Stall attempt ${stallCounter}/${CONFIG.stallLimit}.`
@@ -167,11 +167,10 @@
         } else {
           // If deletion was successful, reset the counter and update the total.
           stallCounter = 0;
-          const newlyDeleted = photoCountBefore - photoCountAfter;
           
-          totalDeleted += newlyDeleted;
+          totalDeleted += countToDelete;
           console.log(
-            `Successfully deleted a batch of ${newlyDeleted}. Total deleted so far: ${totalDeleted} in ${getTimeSince(start)}`
+            `Successfully deleted a batch of ${countToDelete}. Total deleted so far: ${totalDeleted} in ${getTimeSince(start)}`
           );
         }
       } catch (error) {
@@ -223,4 +222,3 @@
     );
   }
 })();
-
