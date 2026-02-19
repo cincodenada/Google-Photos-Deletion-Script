@@ -81,13 +81,25 @@
     await sleep(CONFIG.actionDelay);
   }
 
+  function getTimeSince(start) {
+    const now = new Date();
+    const totalTimeMin = (now - start)/1000/60;
+    if(totalTimeMin >= 60) {
+      const totalTimeHour = totalTimeMin/60;
+      const remainderMin = totalTimeMin - Math.floor(totalTimeHour)*60;
+      return `${Math.floor(totalTimeHour)}hr${Math.round(remainderMin)}min`
+    } else {
+      return `${totalTimeMin.toFixed(1)}min`
+    }
+  }
+
   /**
    * @description The main function that orchestrates the entire photo deletion process.
    */
   async function runPhotoDeleter() {
     let totalDeleted = 0;
     let stallCounter = 0; // Counter for consecutive failed deletions.
-
+    console.log(String(start));
     console.log(
       "%c--- Google Photos Deletion Script Initialized ---",
       "color: #4CAF50; font-size: 16px; font-weight: bold;"
@@ -156,19 +168,21 @@
           // If deletion was successful, reset the counter and update the total.
           stallCounter = 0;
           const newlyDeleted = photoCountBefore - photoCountAfter;
+          
           totalDeleted += newlyDeleted;
           console.log(
-            `Successfully deleted a batch of ${newlyDeleted}. Total deleted so far: ${totalDeleted}`
+            `Successfully deleted a batch of ${newlyDeleted}. Total deleted so far: ${totalDeleted} in ${getTimeSince(start)}`
           );
         }
       } catch (error) {
         // If waitUntil times out finding selectable photos, it means the page is empty.
         if (error.message.includes("any selectable photo")) {
-          console.log(
+            console.log(
             "Could not find any more photos after waiting. Mission accomplished!"
           );
         } else {
           // This catches the stall error or any other unexpected errors.
+          console.log(String(new Date()));
           console.error(
             `%c[SCRIPT HALTED] ${error.message}`,
             "color: #F44336; font-weight: bold; font-size: 14px;"
@@ -183,26 +197,30 @@
     }
 
     console.log(
-      `Script finished. A total of approximately ${totalDeleted} photos were deleted.`
+      `Script finished. A total of approximately ${totalDeleted} photos were deleted in ${getTimeSince(start)}.`
     );
   }
 
   // --- SCRIPT EXECUTION ---
+  let start = new Date();
   try {
     await runPhotoDeleter();
+    console.log(String(new Date()));
     console.log(
-      "%c--- Script Execution Complete ---",
+      `%c--- Script Execution Complete---`,
       "color: #4CAF50; font-size: 16px; font-weight: bold;"
     );
   } catch (error) {
+    console.log(String(new Date()));
     console.error(
       "%c--- SCRIPT ENCOUNTERED A CRITICAL ERROR ---",
       "color: #F44336; font-size: 16px; font-weight: bold;"
     );
-    console.error("The script has stopped unexpectedly. Details below:");
+    console.error(`The script has stopped unexpectedly after ${getTimeSince(start)}. Details below:`);
     console.error(error);
     console.warn(
       "Please reload the page and try running the script again if photos remain."
     );
   }
 })();
+
